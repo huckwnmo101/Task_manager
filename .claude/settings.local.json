@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run db:push:*)",
+      "Bash(npm run dev:*)",
+      "Bash(grep:*)",
+      "Skill(frontend-design:frontend-design)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(cmd /c \"taskkill /PID 2284 /F\")",
+      "Bash(powershell -Command \"Stop-Process -Id 2284 -Force\")",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Todo List App with Supabase\n\n- React + TypeScript + Vite setup\n- ShadCN UI components with Nordic theme\n- Supabase integration \\(PostgreSQL, Auth\\)\n- Google OAuth login support\n- Task management with projects, categories\n- Kanban board, calendar view, statistics\n- Responsive design\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(dir:*)"
+    ]
+  }
+}
