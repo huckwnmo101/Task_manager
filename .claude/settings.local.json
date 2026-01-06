@@ -14,7 +14,10 @@
       "Bash(git remote add:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Todo List App with Supabase\n\n- React + TypeScript + Vite setup\n- ShadCN UI components with Nordic theme\n- Supabase integration \\(PostgreSQL, Auth\\)\n- Google OAuth login support\n- Task management with projects, categories\n- Kanban board, calendar view, statistics\n- Responsive design\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }
