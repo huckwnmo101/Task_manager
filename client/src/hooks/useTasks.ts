@@ -26,7 +26,7 @@ export function useTasks(filters: TaskFilters = {}) {
           *,
           category:categories(*),
           project:projects(*),
-          subtasks(id, is_completed)
+          subtasks(id, title, is_completed, is_today, order)
         `)
         .order('created_at', { ascending: false });
 
@@ -78,6 +78,14 @@ export function useTasks(filters: TaskFilters = {}) {
           project: task.project,
           subtaskTotal,
           subtaskCompleted,
+          subtasks: subtasks.map((s: any) => ({
+            id: s.id,
+            taskId: task.id,
+            title: s.title,
+            isCompleted: s.is_completed,
+            isToday: s.is_today,
+            order: s.order,
+          })),
         };
       });
     },
@@ -130,6 +138,7 @@ export function useTask(taskId: number | null) {
           taskId: s.task_id,
           title: s.title,
           isCompleted: s.is_completed,
+          isToday: s.is_today,
           completedAt: s.completed_at,
           order: s.order,
           createdAt: s.created_at,

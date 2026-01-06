@@ -125,6 +125,7 @@ export type Database = {
           task_id: number;
           title: string;
           is_completed: boolean;
+          is_today: boolean;
           completed_at: number | null;
           order: number;
           created_at: string;
@@ -135,6 +136,7 @@ export type Database = {
           task_id: number;
           title: string;
           is_completed?: boolean;
+          is_today?: boolean;
           completed_at?: number | null;
           order?: number;
           created_at?: string;
@@ -143,6 +145,7 @@ export type Database = {
         Update: {
           title?: string;
           is_completed?: boolean;
+          is_today?: boolean;
           completed_at?: number | null;
           order?: number;
           updated_at?: string;
@@ -236,10 +239,12 @@ export type Subtask = {
   taskId: number;
   title: string;
   isCompleted: boolean;
+  isToday: boolean;
   completedAt: number | null;
   order: number;
   createdAt: string;
   updatedAt: string;
+  task?: Task;
 };
 
 export type Comment = {

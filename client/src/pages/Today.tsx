@@ -1,20 +1,27 @@
 import { useState, useMemo } from "react";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
+import { useTodaySubtasks, useUpdateSubtask } from "@/hooks/useSubtasks";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, CheckCircle2, Clock, ListTodo, ClipboardList } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Calendar, CheckCircle2, Clock, ListTodo, ClipboardList, CheckSquare, X, FolderOpen } from "lucide-react";
 import TaskCard from "@/components/TaskCard";
 import CreateTaskDialog from "@/components/CreateTaskDialog";
 import TaskDetailDialog from "@/components/TaskDetailDialog";
 import AddToTodayDialog from "@/components/AddToTodayDialog";
+import AddSubtaskToTodayDialog from "@/components/AddSubtaskToTodayDialog";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export default function Today() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [addToTodayDialogOpen, setAddToTodayDialogOpen] = useState(false);
+  const [addSubtaskToTodayDialogOpen, setAddSubtaskToTodayDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
 
   const { data: tasks = [], isLoading } = useTasks({});
+  const { data: todaySubtasks = [], isLoading: subtasksLoading } = useTodaySubtasks();
   const updateTask = useUpdateTask();
+  const updateSubtask = useUpdateSubtask();
 
   const handleRemoveFromToday = (taskId: number) => {
     updateTask.mutate(
@@ -22,6 +29,28 @@ export default function Today() {
       {
         onSuccess: () => {
           toast.success("오늘의 할 일에서 제외되었습니다");
+        },
+      }
+    );
+  };
+
+  const handleRemoveSubtaskFromToday = (subtaskId: number) => {
+    updateSubtask.mutate(
+      { id: subtaskId, isToday: false },
+      {
+        onSuccess: () => {
+          toast.success("서브태스크가 오늘의 할 일에서 제외되었습니다");
+        },
+      }
+    );
+  };
+
+  const handleToggleSubtaskComplete = (subtaskId: number, isCompleted: boolean) => {
+    updateSubtask.mutate(
+      { id: subtaskId, isCompleted },
+      {
+        onSuccess: () => {
+          toast.success(isCompleted ? "서브태스크 완료!" : "서브태스크 미완료로 변경");
         },
       }
     );
@@ -43,8 +72,17 @@ export default function Today() {
     });
   }, [tasks]);
 
-  const completedCount = todayTasks.filter((t: any) => t.isCompleted).length;
-  const totalCount = todayTasks.length;
+  // Stats for tasks
+  const completedTaskCount = todayTasks.filter((t: any) => t.isCompleted).length;
+  const totalTaskCount = todayTasks.length;
+
+  // Stats for subtasks
+  const completedSubtaskCount = todaySubtasks.filter((s: any) => s.isCompleted).length;
+  const totalSubtaskCount = todaySubtasks.length;
+
+  // Combined stats
+  const totalCount = totalTaskCount + totalSubtaskCount;
+  const completedCount = completedTaskCount + completedSubtaskCount;
   const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const remainingCount = totalCount - completedCount;
 
@@ -76,11 +114,19 @@ export default function Today() {
           <div className="flex gap-2">
             <Button
               variant="outline"
+              onClick={() => setAddSubtaskToTodayDialogOpen(true)}
+              className="rounded-xl h-11 px-5 font-medium"
+            >
+              <CheckSquare className="w-4 h-4 mr-2" />
+              서브태스크 추가
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => setAddToTodayDialogOpen(true)}
               className="rounded-xl h-11 px-5 font-medium"
             >
               <ClipboardList className="w-4 h-4 mr-2" />
-              기존 태스크 추가
+              태스크 추가
             </Button>
             <Button
               onClick={() => setCreateDialogOpen(true)}
@@ -143,40 +189,12 @@ export default function Today() {
       )}
 
       {/* Task List */}
-      <div className="space-y-3">
-        {isLoading ? (
-          <div className="text-center py-16">
-            <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
-            <p className="text-muted-foreground mt-4 text-sm">로딩 중...</p>
-          </div>
-        ) : todayTasks.length === 0 ? (
-          <div className="nordic-card text-center py-16">
-            <div className="w-16 h-16 rounded-2xl bg-secondary mx-auto mb-4 flex items-center justify-center">
-              <Calendar className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">오늘 할 일이 없습니다</h3>
-            <p className="text-muted-foreground mb-6">
-              새로운 태스크를 추가하거나 기존 태스크에서 선택하세요
-            </p>
-            <div className="flex gap-3 justify-center">
-              <Button
-                variant="outline"
-                onClick={() => setAddToTodayDialogOpen(true)}
-                className="rounded-xl"
-              >
-                <ClipboardList className="w-4 h-4 mr-2" />
-                기존 태스크 추가
-              </Button>
-              <Button
-                onClick={() => setCreateDialogOpen(true)}
-                className="rounded-xl"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                새 태스크
-              </Button>
-            </div>
-          </div>
-        ) : (
+      {todayTasks.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <ListTodo className="w-5 h-5" />
+            태스크 ({completedTaskCount}/{totalTaskCount})
+          </h2>
           <div className="space-y-3 nordic-stagger">
             {todayTasks.map((task: any, index: number) => (
               <div key={task.id} className="nordic-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
@@ -188,8 +206,110 @@ export default function Today() {
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Subtask List */}
+      {todaySubtasks.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <CheckSquare className="w-5 h-5" />
+            서브태스크 ({completedSubtaskCount}/{totalSubtaskCount})
+          </h2>
+          <div className="space-y-2 nordic-stagger">
+            {todaySubtasks.map((subtask: any, index: number) => (
+              <div
+                key={subtask.id}
+                className="nordic-slide-up nordic-card group"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleSubtaskComplete(subtask.id, !subtask.isCompleted);
+                    }}
+                    className="shrink-0"
+                  >
+                    <Checkbox
+                      checked={subtask.isCompleted}
+                      className={cn(
+                        "h-5 w-5 rounded-md border-2 transition-all",
+                        subtask.isCompleted
+                          ? "border-primary bg-primary"
+                          : "border-border hover:border-primary/50"
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      "font-medium",
+                      subtask.isCompleted && "line-through text-muted-foreground"
+                    )}>
+                      {subtask.title}
+                    </p>
+                    {subtask.task && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <FolderOpen className="w-3 h-3" />
+                        {subtask.task.title}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveSubtaskFromToday(subtask.id)}
+                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground shrink-0"
+                    title="오늘의 할 일에서 제외"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && todayTasks.length === 0 && todaySubtasks.length === 0 && (
+        <div className="nordic-card text-center py-16">
+          <div className="w-16 h-16 rounded-2xl bg-secondary mx-auto mb-4 flex items-center justify-center">
+            <Calendar className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">오늘 할 일이 없습니다</h3>
+          <p className="text-muted-foreground mb-6">
+            태스크나 서브태스크를 추가하세요
+          </p>
+          <div className="flex gap-3 justify-center flex-wrap">
+            <Button
+              variant="outline"
+              onClick={() => setAddSubtaskToTodayDialogOpen(true)}
+              className="rounded-xl"
+            >
+              <CheckSquare className="w-4 h-4 mr-2" />
+              서브태스크 추가
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setAddToTodayDialogOpen(true)}
+              className="rounded-xl"
+            >
+              <ClipboardList className="w-4 h-4 mr-2" />
+              태스크 추가
+            </Button>
+            <Button
+              onClick={() => setCreateDialogOpen(true)}
+              className="rounded-xl"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              새 태스크
+            </Button>
+          </div>
+        </div>
+      )}
 
       <CreateTaskDialog
         open={createDialogOpen}
@@ -200,6 +320,11 @@ export default function Today() {
       <AddToTodayDialog
         open={addToTodayDialogOpen}
         onOpenChange={setAddToTodayDialogOpen}
+      />
+
+      <AddSubtaskToTodayDialog
+        open={addSubtaskToTodayDialogOpen}
+        onOpenChange={setAddSubtaskToTodayDialogOpen}
       />
 
       {selectedTaskId && (

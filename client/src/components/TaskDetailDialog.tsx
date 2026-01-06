@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
 import { useCreateSubtask, useUpdateSubtask, useDeleteSubtask } from "@/hooks/useSubtasks";
 import { useCreateComment, useDeleteComment } from "@/hooks/useComments";
-import { Plus, Trash2, Edit2, Calendar, Flag, MessageSquare, Check, X } from "lucide-react";
+import { Plus, Trash2, Edit2, Calendar, Flag, MessageSquare, Check, X, ClipboardList } from "lucide-react";
+import AddSubtaskFromTaskDialog from "./AddSubtaskFromTaskDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -30,6 +31,7 @@ export default function TaskDetailDialog({ taskId, open, onOpenChange }: TaskDet
   const [editDescription, setEditDescription] = useState("");
   const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null);
   const [editingSubtaskTitle, setEditingSubtaskTitle] = useState("");
+  const [addSubtaskFromTaskOpen, setAddSubtaskFromTaskOpen] = useState(false);
 
   const { data: taskDetail, isLoading } = useTask(taskId);
 
@@ -335,16 +337,26 @@ export default function TaskDetailDialog({ taskId, open, onOpenChange }: TaskDet
               ))}
             </div>
             
-            <div className="flex gap-2">
-              <Input
-                placeholder="새 서브태스크 추가..."
-                value={newSubtaskTitle}
-                onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddSubtask()}
-              />
-              <Button onClick={handleAddSubtask}>
-                <Plus className="w-4 h-4" />
-              </Button>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">새 서브태스크 추가</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="서브태스크 제목 입력..."
+                  value={newSubtaskTitle}
+                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddSubtask()}
+                />
+                <Button onClick={handleAddSubtask} title="추가">
+                  <Plus className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setAddSubtaskFromTaskOpen(true)}
+                  title="기존 태스크에서 가져오기"
+                >
+                  <ClipboardList className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
           
@@ -449,6 +461,12 @@ export default function TaskDetailDialog({ taskId, open, onOpenChange }: TaskDet
           </div>
         </div>
       </DialogContent>
+
+      <AddSubtaskFromTaskDialog
+        open={addSubtaskFromTaskOpen}
+        onOpenChange={setAddSubtaskFromTaskOpen}
+        taskId={taskId}
+      />
     </Dialog>
   );
 }
