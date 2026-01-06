@@ -25,7 +25,8 @@ export function useTasks(filters: TaskFilters = {}) {
         .select(`
           *,
           category:categories(*),
-          project:projects(*)
+          project:projects(*),
+          subtasks(id, is_completed)
         `)
         .order('created_at', { ascending: false });
 
@@ -53,24 +54,32 @@ export function useTasks(filters: TaskFilters = {}) {
       if (error) throw error;
 
       // Transform to match existing interface
-      return (data || []).map((task: any) => ({
-        id: task.id,
-        userId: task.user_id,
-        projectId: task.project_id,
-        categoryId: task.category_id,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        dueDate: task.due_date,
-        isCompleted: task.is_completed,
-        isToday: task.is_today,
-        completedAt: task.completed_at,
-        createdAt: task.created_at,
-        updatedAt: task.updated_at,
-        category: task.category,
-        project: task.project,
-      }));
+      return (data || []).map((task: any) => {
+        const subtasks = task.subtasks || [];
+        const subtaskTotal = subtasks.length;
+        const subtaskCompleted = subtasks.filter((s: any) => s.is_completed).length;
+
+        return {
+          id: task.id,
+          userId: task.user_id,
+          projectId: task.project_id,
+          categoryId: task.category_id,
+          title: task.title,
+          description: task.description,
+          status: task.status,
+          priority: task.priority,
+          dueDate: task.due_date,
+          isCompleted: task.is_completed,
+          isToday: task.is_today,
+          completedAt: task.completed_at,
+          createdAt: task.created_at,
+          updatedAt: task.updated_at,
+          category: task.category,
+          project: task.project,
+          subtaskTotal,
+          subtaskCompleted,
+        };
+      });
     },
     enabled: !!user,
   });

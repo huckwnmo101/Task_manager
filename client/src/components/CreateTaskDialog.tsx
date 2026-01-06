@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,21 +21,29 @@ interface CreateTaskDialogProps {
   onOpenChange: (open: boolean) => void;
   defaultIsToday?: boolean;
   defaultProjectId?: number;
+  defaultDueDate?: Date;
 }
 
-export default function CreateTaskDialog({ 
-  open, 
-  onOpenChange, 
+export default function CreateTaskDialog({
+  open,
+  onOpenChange,
   defaultIsToday = false,
-  defaultProjectId 
+  defaultProjectId,
+  defaultDueDate
 }: CreateTaskDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [status, setStatus] = useState<"todo" | "in_progress" | "done" | "hold">("todo");
-  const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [dueDate, setDueDate] = useState<Date | undefined>(defaultDueDate);
   const [projectId, setProjectId] = useState<number | undefined>(defaultProjectId);
   const [categoryId, setCategoryId] = useState<number | undefined>();
+
+  useEffect(() => {
+    if (open && defaultDueDate) {
+      setDueDate(defaultDueDate);
+    }
+  }, [open, defaultDueDate]);
   
   const { data: projects = [] } = useProjects();
   const { data: categories = [] } = useCategories();

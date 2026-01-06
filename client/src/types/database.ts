@@ -227,6 +227,8 @@ export type Task = {
   updatedAt: string;
   category?: Category | null;
   project?: Project | null;
+  subtaskTotal?: number;
+  subtaskCompleted?: number;
 };
 
 export type Subtask = {

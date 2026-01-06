@@ -11,6 +11,12 @@ export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    setCreateDialogOpen(true);
+  };
   
   const { data: tasks = [] } = useTasks({});
   
@@ -142,8 +148,9 @@ export default function CalendarView() {
             return (
               <div
                 key={index}
+                onClick={() => handleDateClick(date)}
                 className={cn(
-                  "min-h-[120px] p-3 rounded-lg border transition-all hover:shadow-md",
+                  "min-h-[120px] p-3 rounded-lg border transition-all hover:shadow-md cursor-pointer",
                   isTodayDate && "bg-primary/10 border-primary",
                   !isCurrentMonthDate && "opacity-40 bg-muted/30"
                 )}
@@ -168,7 +175,10 @@ export default function CalendarView() {
                   {dayTasks.slice(0, 3).map(task => (
                     <div
                       key={task.id}
-                      onClick={() => setSelectedTaskId(task.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTaskId(task.id);
+                      }}
                       className={cn(
                         "text-xs p-2 rounded cursor-pointer hover:shadow-sm transition-all",
                         task.priority === "high" && "bg-red-100 text-red-700",
@@ -194,7 +204,11 @@ export default function CalendarView() {
 
       <CreateTaskDialog
         open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
+        onOpenChange={(open) => {
+          setCreateDialogOpen(open);
+          if (!open) setSelectedDate(null);
+        }}
+        defaultDueDate={selectedDate || undefined}
       />
       
       {selectedTaskId && (

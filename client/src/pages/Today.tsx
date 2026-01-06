@@ -1,16 +1,31 @@
 import { useState, useMemo } from "react";
-import { useTasks } from "@/hooks/useTasks";
+import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, CheckCircle2, Clock, ListTodo } from "lucide-react";
+import { Plus, Calendar, CheckCircle2, Clock, ListTodo, ClipboardList } from "lucide-react";
 import TaskCard from "@/components/TaskCard";
 import CreateTaskDialog from "@/components/CreateTaskDialog";
 import TaskDetailDialog from "@/components/TaskDetailDialog";
+import AddToTodayDialog from "@/components/AddToTodayDialog";
+import { toast } from "sonner";
 
 export default function Today() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [addToTodayDialogOpen, setAddToTodayDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
 
   const { data: tasks = [], isLoading } = useTasks({});
+  const updateTask = useUpdateTask();
+
+  const handleRemoveFromToday = (taskId: number) => {
+    updateTask.mutate(
+      { id: taskId, isToday: false },
+      {
+        onSuccess: () => {
+          toast.success("오늘의 할 일에서 제외되었습니다");
+        },
+      }
+    );
+  };
 
   // Filter today's tasks
   const todayTasks = useMemo(() => {
@@ -58,13 +73,23 @@ export default function Today() {
               })}
             </p>
           </div>
-          <Button
-            onClick={() => setCreateDialogOpen(true)}
-            className="rounded-xl h-11 px-5 font-medium shadow-sm"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            새 태스크
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setAddToTodayDialogOpen(true)}
+              className="rounded-xl h-11 px-5 font-medium"
+            >
+              <ClipboardList className="w-4 h-4 mr-2" />
+              기존 태스크 추가
+            </Button>
+            <Button
+              onClick={() => setCreateDialogOpen(true)}
+              className="rounded-xl h-11 px-5 font-medium shadow-sm"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              새 태스크
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -131,15 +156,25 @@ export default function Today() {
             </div>
             <h3 className="text-xl font-semibold mb-2">오늘 할 일이 없습니다</h3>
             <p className="text-muted-foreground mb-6">
-              새로운 태스크를 추가하여 생산적인 하루를 시작하세요
+              새로운 태스크를 추가하거나 기존 태스크에서 선택하세요
             </p>
-            <Button
-              onClick={() => setCreateDialogOpen(true)}
-              className="rounded-xl"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              태스크 추가
-            </Button>
+            <div className="flex gap-3 justify-center">
+              <Button
+                variant="outline"
+                onClick={() => setAddToTodayDialogOpen(true)}
+                className="rounded-xl"
+              >
+                <ClipboardList className="w-4 h-4 mr-2" />
+                기존 태스크 추가
+              </Button>
+              <Button
+                onClick={() => setCreateDialogOpen(true)}
+                className="rounded-xl"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                새 태스크
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3 nordic-stagger">
@@ -148,6 +183,7 @@ export default function Today() {
                 <TaskCard
                   task={task}
                   onClick={() => setSelectedTaskId(task.id)}
+                  onRemoveFromToday={task.isToday ? () => handleRemoveFromToday(task.id) : undefined}
                 />
               </div>
             ))}
@@ -159,6 +195,11 @@ export default function Today() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         defaultIsToday={true}
+      />
+
+      <AddToTodayDialog
+        open={addToTodayDialogOpen}
+        onOpenChange={setAddToTodayDialogOpen}
       />
 
       {selectedTaskId && (

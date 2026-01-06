@@ -1,5 +1,6 @@
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, Flag, FolderOpen, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, Flag, FolderOpen, Clock, CheckSquare, X } from "lucide-react";
 import { useToggleTaskComplete } from "@/hooks/useTasks";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/types/database";
@@ -7,9 +8,10 @@ import type { Task } from "@/types/database";
 interface TaskCardProps {
   task: Task;
   onClick?: () => void;
+  onRemoveFromToday?: () => void;
 }
 
-export default function TaskCard({ task, onClick }: TaskCardProps) {
+export default function TaskCard({ task, onClick, onRemoveFromToday }: TaskCardProps) {
   const toggleComplete = useToggleTaskComplete();
 
   const handleCheckboxChange = (e: React.MouseEvent) => {
@@ -90,13 +92,31 @@ export default function TaskCard({ task, onClick }: TaskCardProps) {
               {task.title}
             </h3>
 
-            {/* Priority indicator */}
-            <div className={cn(
-              "shrink-0 w-2 h-2 rounded-full mt-2",
-              task.priority === "high" && "bg-red-500",
-              task.priority === "medium" && "bg-amber-500",
-              task.priority === "low" && "bg-emerald-500"
-            )} />
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Priority indicator */}
+              <div className={cn(
+                "w-2 h-2 rounded-full mt-0.5",
+                task.priority === "high" && "bg-red-500",
+                task.priority === "medium" && "bg-amber-500",
+                task.priority === "low" && "bg-emerald-500"
+              )} />
+
+              {/* Remove from today button */}
+              {onRemoveFromToday && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveFromToday();
+                  }}
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                  title="오늘의 할 일에서 제외"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </div>
 
           {task.description && (
@@ -155,7 +175,41 @@ export default function TaskCard({ task, onClick }: TaskCardProps) {
                 프로젝트
               </span>
             )}
+
+            {/* Subtask progress */}
+            {task.subtaskTotal && task.subtaskTotal > 0 && (
+              <span className={cn(
+                "nordic-badge text-xs",
+                task.subtaskCompleted === task.subtaskTotal
+                  ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+                  : "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+              )}>
+                <CheckSquare className="w-3 h-3" />
+                {task.subtaskCompleted}/{task.subtaskTotal}
+              </span>
+            )}
           </div>
+
+          {/* Subtask progress bar */}
+          {task.subtaskTotal && task.subtaskTotal > 0 && (
+            <div className="mt-3 pt-3 border-t border-border/50">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+                <span>Subtasks</span>
+                <span>{Math.round(((task.subtaskCompleted || 0) / task.subtaskTotal) * 100)}%</span>
+              </div>
+              <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-300",
+                    task.subtaskCompleted === task.subtaskTotal
+                      ? "bg-emerald-500"
+                      : "bg-primary"
+                  )}
+                  style={{ width: `${((task.subtaskCompleted || 0) / task.subtaskTotal) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

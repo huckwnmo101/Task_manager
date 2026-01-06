@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
 import { useCreateSubtask, useUpdateSubtask, useDeleteSubtask } from "@/hooks/useSubtasks";
 import { useCreateComment, useDeleteComment } from "@/hooks/useComments";
-import { Plus, Trash2, Edit2, Calendar, Flag, MessageSquare } from "lucide-react";
+import { Plus, Trash2, Edit2, Calendar, Flag, MessageSquare, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -27,6 +28,8 @@ export default function TaskDetailDialog({ taskId, open, onOpenChange }: TaskDet
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editingSubtaskId, setEditingSubtaskId] = useState<number | null>(null);
+  const [editingSubtaskTitle, setEditingSubtaskTitle] = useState("");
 
   const { data: taskDetail, isLoading } = useTask(taskId);
 
@@ -80,6 +83,20 @@ export default function TaskDetailDialog({ taskId, open, onOpenChange }: TaskDet
     );
   };
 
+  const handleSaveSubtaskTitle = (subtaskId: number) => {
+    if (!editingSubtaskTitle.trim()) return;
+    updateSubtask.mutate(
+      { id: subtaskId, taskId: taskId, title: editingSubtaskTitle.trim() },
+      {
+        onSuccess: () => {
+          toast.success("서브태스크가 수정되었습니다");
+          setEditingSubtaskId(null);
+          setEditingSubtaskTitle("");
+        },
+      }
+    );
+  };
+
   const handleAddComment = () => {
     if (!newComment.trim()) return;
     createComment.mutate(
@@ -92,7 +109,29 @@ export default function TaskDetailDialog({ taskId, open, onOpenChange }: TaskDet
       }
     );
   };
-  
+
+  const handleStatusChange = (status: string) => {
+    updateTask.mutate(
+      { id: taskId, status },
+      {
+        onSuccess: () => {
+          toast.success("상태가 변경되었습니다");
+        },
+      }
+    );
+  };
+
+  const handlePriorityChange = (priority: string) => {
+    updateTask.mutate(
+      { id: taskId, priority },
+      {
+        onSuccess: () => {
+          toast.success("우선순위가 변경되었습니다");
+        },
+      }
+    );
+  };
+
   const priorityConfig = {
     high: { label: "높음", color: "bg-red-100 text-red-700" },
     medium: { label: "중간", color: "bg-yellow-100 text-yellow-700" },
@@ -122,14 +161,42 @@ export default function TaskDetailDialog({ taskId, open, onOpenChange }: TaskDet
                 <DialogTitle className="text-3xl font-bold mb-2">{task.title}</DialogTitle>
               )}
               
-              <div className="flex flex-wrap gap-2 mt-3">
-                <Badge className={priorityConfig[task.priority].color}>
-                  <Flag className="w-3 h-3 mr-1" />
-                  {priorityConfig[task.priority].label}
-                </Badge>
-                <Badge className={statusConfig[task.status].color}>
-                  {statusConfig[task.status].label}
-                </Badge>
+              <div className="flex flex-wrap items-center gap-3 mt-3">
+                {/* Priority Select */}
+                <Select value={task.priority} onValueChange={handlePriorityChange}>
+                  <SelectTrigger className="w-[110px] h-8">
+                    <div className="flex items-center gap-1.5">
+                      <Flag className="w-3 h-3" />
+                      <SelectValue />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">
+                      <span className="text-red-600">높음</span>
+                    </SelectItem>
+                    <SelectItem value="medium">
+                      <span className="text-yellow-600">중간</span>
+                    </SelectItem>
+                    <SelectItem value="low">
+                      <span className="text-green-600">낮음</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Status Select */}
+                <Select value={task.status} onValueChange={handleStatusChange}>
+                  <SelectTrigger className="w-[110px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todo">대기</SelectItem>
+                    <SelectItem value="in_progress">진행중</SelectItem>
+                    <SelectItem value="done">완료</SelectItem>
+                    <SelectItem value="hold">보류</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Due Date */}
                 {task.dueDate && (
                   <Badge variant="outline">
                     <Calendar className="w-3 h-3 mr-1" />
@@ -143,7 +210,7 @@ export default function TaskDetailDialog({ taskId, open, onOpenChange }: TaskDet
           </div>
         </DialogHeader>
         
-        <div className="space-y-6 mt-6 pb-20">
+        <div className="space-y-6 mt-6">
           {/* Description */}
           <div>
             <Label className="text-lg font-semibold mb-2 block">설명</Label>
@@ -166,16 +233,16 @@ export default function TaskDetailDialog({ taskId, open, onOpenChange }: TaskDet
           <div>
             <div className="flex items-center justify-between mb-4">
               <Label className="text-lg font-semibold">
-                서브태스크 ({completedSubtasks}/{subtasks.length})
+                Subtasks ({completedSubtasks}/{subtasks.length})
               </Label>
               {subtasks.length > 0 && (
-                <span className="text-sm text-muted-foreground">{subtaskProgress}% 완료</span>
+                <span className="text-sm text-muted-foreground">{subtaskProgress}%</span>
               )}
             </div>
             
             <div className="space-y-2 mb-4">
               {subtasks.map((subtask) => (
-                <div key={subtask.id} className="flex items-center gap-3 p-3 rounded-lg border">
+                <div key={subtask.id} className="flex items-center gap-3 p-3 rounded-lg border group">
                   <Checkbox
                     checked={subtask.isCompleted}
                     onCheckedChange={(checked) => {
@@ -185,24 +252,85 @@ export default function TaskDetailDialog({ taskId, open, onOpenChange }: TaskDet
                         isCompleted: !!checked,
                       });
                     }}
+                    className="shrink-0"
                   />
-                  <span className={subtask.isCompleted ? "line-through text-muted-foreground flex-1" : "flex-1"}>
-                    {subtask.title}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      if (confirm("서브태스크를 삭제하시겠습니까?")) {
-                        deleteSubtask.mutate(
-                          { id: subtask.id, taskId: taskId },
-                          { onSuccess: () => toast.success("서브태스크가 삭제되었습니다") }
-                        );
-                      }
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+
+                  {editingSubtaskId === subtask.id ? (
+                    <div className="flex-1 flex items-center gap-2">
+                      <Input
+                        value={editingSubtaskTitle}
+                        onChange={(e) => setEditingSubtaskTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSaveSubtaskTitle(subtask.id);
+                          if (e.key === "Escape") {
+                            setEditingSubtaskId(null);
+                            setEditingSubtaskTitle("");
+                          }
+                        }}
+                        autoFocus
+                        className="flex-1 h-8"
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleSaveSubtaskTitle(subtask.id)}
+                        className="h-8 w-8 p-0 shrink-0"
+                      >
+                        <Check className="w-4 h-4 text-green-600" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditingSubtaskId(null);
+                          setEditingSubtaskTitle("");
+                        }}
+                        className="h-8 w-8 p-0 shrink-0"
+                      >
+                        <X className="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <span
+                        className={`flex-1 cursor-pointer hover:text-primary ${subtask.isCompleted ? "line-through text-muted-foreground" : ""}`}
+                        onClick={() => {
+                          setEditingSubtaskId(subtask.id);
+                          setEditingSubtaskTitle(subtask.title);
+                        }}
+                      >
+                        {subtask.title}
+                      </span>
+                      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingSubtaskId(subtask.id);
+                            setEditingSubtaskTitle(subtask.title);
+                          }}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            if (confirm("서브태스크를 삭제하시겠습니까?")) {
+                              deleteSubtask.mutate(
+                                { id: subtask.id, taskId: taskId },
+                                { onSuccess: () => toast.success("서브태스크가 삭제되었습니다") }
+                              );
+                            }
+                          }}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -270,56 +398,57 @@ export default function TaskDetailDialog({ taskId, open, onOpenChange }: TaskDet
           </div>
         </div>
         
-        {/* Action buttons at bottom - all separated from close button */}
-        <div className="fixed bottom-6 left-6 flex gap-3 pointer-events-none">
-          {isEditing ? (
-            <>
-              <Button size="sm" onClick={handleSaveEdit} className="pointer-events-auto">
-                저장
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setIsEditing(false)} className="pointer-events-auto">
-                취소
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={() => {
-                  setIsEditing(true);
-                  setEditTitle(task.title);
-                  setEditDescription(task.description || "");
-                }}
-                className="pointer-events-auto"
-              >
-                <Edit2 className="w-4 h-4 mr-2" />
-                수정
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => {
-                  if (confirm("정말 삭제하실건요?")) {
-                    deleteTask.mutate(
-                      { id: taskId },
-                      {
-                        onSuccess: () => {
-                          toast.success("태스크가 삭제되었습니다");
-                          onOpenChange(false);
-                        },
-                      }
-                    );
-                  }
-                }}
-                className="pointer-events-auto"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                삭제
-              </Button>
-            </>
-          )}
-        </div>    </DialogContent>
+        {/* Action buttons at bottom */}
+        <div className="pt-6 border-t mt-6">
+          <div className="flex gap-3">
+            {isEditing ? (
+              <>
+                <Button size="sm" onClick={handleSaveEdit}>
+                  저장
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
+                  취소
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditing(true);
+                    setEditTitle(task.title);
+                    setEditDescription(task.description || "");
+                  }}
+                >
+                  <Edit2 className="w-4 h-4 mr-2" />
+                  수정
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => {
+                    if (confirm("정말 삭제하시겠습니까?")) {
+                      deleteTask.mutate(
+                        { id: taskId },
+                        {
+                          onSuccess: () => {
+                            toast.success("태스크가 삭제되었습니다");
+                            onOpenChange(false);
+                          },
+                        }
+                      );
+                    }
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  삭제
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </DialogContent>
     </Dialog>
   );
 }
